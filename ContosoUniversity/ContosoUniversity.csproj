@@ -207,6 +207,18 @@
       <HintPath>packages\Azure.Identity.1.14.0\lib\netstandard2.0\Azure.Identity.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Azure.Storage.Blobs">
+      <HintPath>packages\Azure.Storage.Blobs.12.19.1\lib\net461\Azure.Storage.Blobs.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Azure.Storage.Common">
+      <HintPath>packages\Azure.Storage.Common.12.18.1\lib\net461\Azure.Storage.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.IO.Hashing">
+      <HintPath>packages\System.IO.Hashing.6.0.0\lib\netstandard2.0\System.IO.Hashing.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.Identity.Client">
       <HintPath>packages\Microsoft.Identity.Client.4.71.1\lib\net462\Microsoft.Identity.Client.dll</HintPath>
       <Private>True</Private>
@@ -263,6 +275,7 @@
     <Compile Include="PaginatedList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AzurePostgreSqlTokenProvider.cs" />
+    <Compile Include="Services\BlobStorageService.cs" />
     <Compile Include="Services\NotificationService.cs" />
   </ItemGroup>
   <ItemGroup>
