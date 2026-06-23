@@ -299,6 +299,7 @@ resource blobDataContributorAssignment 'Microsoft.Authorization/roleAssignments@
 // ---------------------------------------------------------------------------
 // Outputs
 // ---------------------------------------------------------------------------
+output appServiceName string = appService.name
 output appServiceUrl string = 'https://${appService.properties.defaultHostName}'
 output appServiceId string = appService.id
 output postgresServerName string = postgresServer.name

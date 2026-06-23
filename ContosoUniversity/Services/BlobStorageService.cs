@@ -30,6 +30,8 @@ namespace ContosoUniversity.Services
             if (!string.IsNullOrEmpty(connectionString))
             {
                 _containerClient = new BlobContainerClient(connectionString, containerName);
+                // Ensure the container exists for local development scenarios.
+                _containerClient.CreateIfNotExists(PublicAccessType.Blob);
             }
             else if (!string.IsNullOrEmpty(accountName))
             {
@@ -63,6 +65,7 @@ namespace ContosoUniversity.Services
 
         /// <summary>
         /// Deletes a blob identified by its full URL. No-op if the URL is null/empty.
+        /// Correctly handles blob names that include virtual directory separators ('/').
         /// </summary>
         public void DeleteImage(string blobUrl)
         {
@@ -72,13 +75,29 @@ namespace ContosoUniversity.Services
             }
 
             Uri uri;
-            if (Uri.TryCreate(blobUrl, UriKind.Absolute, out uri))
+            if (!Uri.TryCreate(blobUrl, UriKind.Absolute, out uri))
             {
-                // The blob name is the last path segment.
-                var segments = uri.Segments;
-                var blobName = Uri.UnescapeDataString(segments[segments.Length - 1]);
-                _containerClient.GetBlobClient(blobName).DeleteIfExists();
+                return;
             }
+
+            // AbsolutePath for a blob URL is "/{container}/{blobName}" where blobName
+            // may itself contain '/' for virtual directory hierarchies.
+            // Strip the leading "/{containerName}/" prefix to obtain the full blob name.
+            var containerPrefix = $"/{_containerClient.Name}/";
+            var absolutePath = uri.AbsolutePath;
+            string blobName;
+
+            if (absolutePath.StartsWith(containerPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                blobName = Uri.UnescapeDataString(absolutePath.Substring(containerPrefix.Length));
+            }
+            else
+            {
+                // Fallback: use everything after the first '/' following the host
+                blobName = Uri.UnescapeDataString(absolutePath.TrimStart('/'));
+            }
+
+            _containerClient.GetBlobClient(blobName).DeleteIfExists();
         }
     }
 }
