@@ -201,6 +201,14 @@ resource appService 'Microsoft.Web/sites@2023-12-01' = {
           name: 'NotificationQueuePath'
           value: '.\\Private$\\ContosoUniversityNotifications'
         }
+        {
+          name: 'BlobStorage:AccountName'
+          value: storageAccount.name
+        }
+        {
+          name: 'BlobStorage:ContainerName'
+          value: 'teaching-materials'
+        }
       ]
     }
   }
@@ -242,9 +250,55 @@ resource appServiceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01
 }
 
 // ---------------------------------------------------------------------------
+// Azure Storage Account
+// Stores teaching material images in a blob container.
+// Public blob read access is enabled so images can be rendered directly in browser.
+// The App Service's system-assigned managed identity is granted
+// Storage Blob Data Contributor to upload and delete blobs.
+// ---------------------------------------------------------------------------
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+  name: 'azst${resourceToken}'
+  location: location
+  kind: 'StorageV2'
+  sku: {
+    name: 'Standard_LRS'
+  }
+  properties: {
+    accessTier: 'Hot'
+    allowBlobPublicAccess: true
+    minimumTlsVersion: 'TLS1_2'
+    supportsHttpsTrafficOnly: true
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+  parent: storageAccount
+  name: 'default'
+}
+
+resource teachingMaterialsContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'teaching-materials'
+  properties: {
+    publicAccess: 'Blob'
+  }
+}
+
+// Storage Blob Data Contributor role for the App Service system-assigned managed identity
+var storageBlobDataContributorRoleId = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+resource blobDataContributorAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, appService.id, storageBlobDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageBlobDataContributorRoleId)
+    principalId: appService.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Outputs
 // ---------------------------------------------------------------------------
-output appServiceName string = appService.name
 output appServiceUrl string = 'https://${appService.properties.defaultHostName}'
 output appServiceId string = appService.id
 output postgresServerName string = postgresServer.name
@@ -257,3 +311,6 @@ output managedIdentityId string = managedIdentity.id
 output logAnalyticsWorkspaceId string = logAnalytics.id
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
 output resourceGroupName string = resourceGroup().name
+output storageAccountName string = storageAccount.name
+output storageAccountBlobEndpoint string = storageAccount.properties.primaryEndpoints.blob
+output teachingMaterialsContainerName string = teachingMaterialsContainer.name
